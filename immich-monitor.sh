@@ -5,13 +5,12 @@ NAME=$(basename "$0" .sh)
 
 # Configuration
 CONTAINER_FILTER="immich"
-IDLE_DURATION=120           # Seconds to stay under CPU threshold
-CHECK_INTERVAL=3            # Interval between checks (seconds)
+IDLE_DURATION=20            # Seconds to stay under CPU threshold
+CHECK_INTERVAL=0.250        # Interval between checks (seconds)
 PORT_WAKEUP=2283            # Port to watch for wake-up activity
 CPU_THRESHOLD=1             # Below this CPU usage is considered idle
 
 # Internal
-idle_time=0
 frozen=false
 
 # Permission check
@@ -34,9 +33,9 @@ done
 exec > /dev/kmsg 2>&1
 
 cpuavg() {
-  docker ps -q --filter "name=$CONTAINER_FILTER" | xargs -I {} \
-  docker stats {} --no-stream --format "{{.CPUPerc}}" | sed 's/%//' \
-  | awk '{sum += int($1)} END {print sum}'
+  docker ps -q --filter "name=$CONTAINER_FILTER" | xargs -r -I {} \
+    docker stats {} --no-stream --format "{{.CPUPerc}}" | sed 's/%//' \
+    | awk '{sum += int($1)} END {print (NR > 0 ? sum : 0)}'
 }
 
 freeze() {
@@ -63,23 +62,26 @@ wakeup() {
 trap resume EXIT
 echo "$NAME: [INFO] $CONTAINER_FILTER containers: looker"
 
+idle_start=""
+
 while true; do
   if wakeup; then
     if $frozen; then
       resume
     fi
-    idle_time=0
+    idle_start=""
   elif ! $frozen; then
     cpu_usage=$(cpuavg)
+    current_time=$(date +%s)
 
     if [[ "$cpu_usage" -lt "$CPU_THRESHOLD" ]]; then
-      idle_time=$((idle_time + CHECK_INTERVAL))
+      if [[ -z "$idle_start" ]]; then
+        idle_start=$current_time
+      elif (( current_time - idle_start >= IDLE_DURATION )); then
+        freeze
+      fi
     else
-      idle_time=0
-    fi
-
-    if [[ "$idle_time" -ge "$IDLE_DURATION" ]]; then
-      freeze
+      idle_start=""
     fi
   fi
 

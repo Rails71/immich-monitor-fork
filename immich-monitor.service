@@ -17,8 +17,8 @@ Group=docker
 # overide script logging with STDOUT
 Environment="LOGFILE="
 
-# --- Uptional: hardening ---
-NoNewPrivileges=yes
+# --- Optional: hardening ---
+NoNewPrivileges=no
 ProtectSystem=no
 ProtectHome=read-only
 PrivateTmp=yes
@@ -27,7 +27,8 @@ PrivateMounts=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictAddressFamilies=AF_UNIX AF_NETLINK
-CapabilityBoundingSet=
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
 LockPersonality=yes
 MemoryDenyWriteExecute=yes
 

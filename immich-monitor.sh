@@ -78,7 +78,7 @@ resume() {
 }
 
 wakeup() {
-  # get the packet counter for incomming TCP packets to the wakeup port
+  # get the packet counter for incoming TCP packets to the wakeup port
   local current_pkts=$(
     nft list ruleset \
       | grep -E "tcp dport ${PORT_WAKEUP}\b" \

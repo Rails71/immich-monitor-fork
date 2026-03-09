@@ -6,7 +6,7 @@ NAME=$(basename "$0" .sh)
 # Configuration
 CONTAINER_FILTER="immich"
 IDLE_DURATION=20            # Seconds to stay under CPU threshold
-CHECK_INTERVAL=0.250        # Interval between checks (seconds)
+CHECK_INTERVAL=1        # Interval between checks (seconds)
 PORT_WAKEUP=2283            # Port to watch for wake-up activity
 CPU_THRESHOLD=1             # Below this CPU usage is considered idle
 COOLDOWN_AFTER_UNPAUSE=300  # Optional, set to 0 to disable
@@ -16,8 +16,8 @@ SCHEDULED_STARTS=("00:05" "01:55")  # Align with nightly tasks and backups
 SCHEDULED_DURATIONS=(1200 1200)     # time in seconds
 
 # Logging
-# if using systmd set to "" to use stdout logging 
-LOGFILE="/dev/kmsg"
+# if using systmd set to "" to use stdout logging
+LOGFILE=""
 
 # Internal
 frozen=false
@@ -53,6 +53,16 @@ if [[ -n "${LOGFILE:-}" ]]; then
   exec >> "$LOGFILE" 2>&1
 fi
 
+# If not running under systemd, fork into background
+if [ -z "$INVOCATION_ID" ]; then
+    # Already in background? If so, don't fork again
+    if [ -z "$IMMICH_MONITOR_FORKED" ]; then
+        export IMMICH_MONITOR_FORKED=1
+        nohup "$0" "$@" >/dev/null 2>&1 &
+        exit 0
+    fi
+fi
+
 cpuavg() {
   docker ps -q --filter "name=$CONTAINER_FILTER" | xargs -r -I {} \
     docker stats {} --no-stream --format "{{.CPUPerc}}" | sed 's/%//' \
@@ -62,7 +72,7 @@ cpuavg() {
 freeze() {
   echo "$NAME: [INFO] $CONTAINER_FILTER containers: freeze"
   docker ps --filter "name=$CONTAINER_FILTER" --format "{{.Names}}" | sort -r | while read -r name; do
-    docker pause "$name" > /dev/null
+    docker pause "$name" > /dev/null 2>&1 || true
   done
   frozen=true
 }
@@ -70,7 +80,7 @@ freeze() {
 resume() {
   echo "$NAME: [INFO] $CONTAINER_FILTER containers: resume"
   docker ps --filter "name=$CONTAINER_FILTER" --format "{{.Names}}" | sort | while read -r name; do
-    docker unpause "$name" > /dev/null
+    docker unpause "$name" > /dev/null 2>&1 || true
   done
   frozen=false
   last_unpause_time=$(date +%s)
@@ -108,7 +118,10 @@ echo "$NAME: [INFO] $CONTAINER_FILTER containers: looker"
 
 idle_start=""
 
+
+echo "DEBUG: entering main loop"
 while true; do
+  echo "DEBUG: loop tick"
   current_time=$(date +%s)
 
   if in_any_window; then
@@ -122,7 +135,7 @@ while true; do
   if wakeup; then
     # Always extend cooldown on network activity
     last_unpause_time=$(date +%s)
-    
+
     if $frozen; then
       resume
     fi
@@ -154,4 +167,4 @@ while true; do
 
   sleep "$CHECK_INTERVAL"
 done
-) &
+)

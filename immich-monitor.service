@@ -1,3 +1,4 @@
+  GNU nano 8.1                                           immich-monitor.service
 [Unit]
 Description=Immich Idle monitor
 After=network-online.target docker.service
@@ -16,6 +17,7 @@ Group=docker
 # environment variables
 # overide script logging with STDOUT
 Environment="LOGFILE="
+Environment="DOCKER_CONFIG=/var/lib/immichmonitor-docker"
 
 # give it a clean working directory
 WorkingDirectory=/usr/local/bin
@@ -30,8 +32,7 @@ ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectKernelLogs=true
 PrivateDevices=true
-PrivateNetwork=true
-ReadWritePaths=/var/run/docker.sock
+ReadWritePaths=/var/run/
 CapabilityBoundingSet=
 AmbientCapabilities=
 

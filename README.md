@@ -77,6 +77,9 @@ sudo systemctl daemon-reload
 # Remove script
 sudo rm /usr/local/bin/immich-monitor.sh
 
+# Remove Docker config directory
+sudo rm -rf /var/lib/immichmonitor-docker
+
 # Remove service user
 sudo userdel immichmonitor
 ```

@@ -78,13 +78,14 @@ resume() {
 }
 
 wakeup() {
-  # get the packet counter for incoming TCP packets to the wakeup port
+  # Extract packet counter for the DNAT rule on the wakeup port
   local current_pkts=$(
-    nft list ruleset \
-      | grep -E "tcp dport ${PORT_WAKEUP}\b" \
-      | grep -E "dnat" \
-      | grep -o "packets [0-9]*" \
-      | awk '{print $2}')
+      nft list table ip nat 2>/dev/null \
+          | grep -E "tcp dport ${PORT_WAKEUP}\b" \
+          | grep -E "dnat" \
+          | grep -o "packets [0-9]*" \
+          | awk '{print $2}'
+  )
   
   # First run: initialize and return false
   if [[ -z "${LAST_PKTS:-}" ]]; then

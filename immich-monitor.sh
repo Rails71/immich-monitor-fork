@@ -118,10 +118,7 @@ echo "$NAME: [INFO] $CONTAINER_FILTER containers: looker"
 
 idle_start=""
 
-
-echo "DEBUG: entering main loop"
 while true; do
-  echo "DEBUG: loop tick"
   current_time=$(date +%s)
 
   if in_any_window; then

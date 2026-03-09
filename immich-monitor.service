@@ -10,30 +10,27 @@ Restart=always
 RestartSec=5
 
 # ensure it has access to docker
-User=immichmonitor
+User=root
 Group=docker
 
 # environment variables
 # overide script logging with STDOUT
 Environment="LOGFILE="
-Environment="DOCKER_CONFIG=/var/lib/immichmonitor-docker"
-
-# give it a clean working directory
-WorkingDirectory=/usr/local/bin
 
 # --- Uptional: hardening ---
-NoNewPrivileges=true
+NoNewPrivileges=yes
 ProtectSystem=full
-ProtectHome=true
-ProtectProc=invisible
-PrivateTmp=true
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectKernelLogs=true
-PrivateDevices=true
-ReadWritePaths=/var/run/
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateMounts=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
 CapabilityBoundingSet=
-AmbientCapabilities=
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
 
 # ensure it stops cleanly
 KillSignal=SIGTERM

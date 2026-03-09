@@ -6,8 +6,8 @@ NAME=$(basename "$0" .sh)
 # Configuration
 CONTAINER_FILTER="immich"
 IDLE_DURATION=20            # Seconds to stay under CPU threshold
-CHECK_INTERVAL=1        # Interval between checks (seconds)
-PORT_WAKEUP=2283            # Port to watch for wake-up activity
+CHECK_INTERVAL=1            # Interval between checks (seconds)
+PORT_WAKEUP=80              # Port to watch for wake-up activity
 CPU_THRESHOLD=1             # Below this CPU usage is considered idle
 COOLDOWN_AFTER_UNPAUSE=300  # Optional, set to 0 to disable
 
@@ -23,19 +23,10 @@ LOGFILE=""
 frozen=false
 last_unpause_time=0
 
-# Permission check: must be root OR in docker group
+# Permission check
 if [[ "$EUID" -ne 0 ]]; then
-  # Ensure the docker group exists
-  if ! getent group docker >/dev/null; then
-    echo "$NAME: [ERROR] docker group does not exist on this system"
-    exit 1
-  fi
-
-  # Ensure the user is in the docker group
-  if ! id -nG "$USER" | grep -qw "docker"; then
-    echo "$NAME: [ERROR] This script must be run as root or a user in the docker group"
-    exit 1
-  fi
+  echo "$NAME: [ERROR] This script must be run as root"
+  exit 1
 fi
 
 # Wait until docker is available
@@ -87,7 +78,29 @@ resume() {
 }
 
 wakeup() {
-  netstat -tn | awk -v port="$PORT_WAKEUP" '$6 == "ESTABLISHED" && $4 ~ ":"port"$"' | grep -q .
+  # get the packet counter for incomming TCP packets to the wakeup port
+  local current_pkts=$(
+    nft list ruleset \
+      | grep -E "tcp dport ${PORT_WAKEUP}\b" \
+      | grep -E "dnat" \
+      | grep -o "packets [0-9]*" \
+      | awk '{print $2}')
+  
+  # First run: initialize and return false
+  if [[ -z "${LAST_PKTS:-}" ]]; then
+      LAST_PKTS=$current_pkts
+      return 1
+  fi
+
+  # If packet count increased → external traffic detected
+  if (( current_pkts > LAST_PKTS )); then
+      LAST_PKTS=$current_pkts
+      return 0
+  fi
+
+  # No new packets
+  LAST_PKTS=$current_pkts
+  return 1
 }
 
 in_any_window() {

@@ -36,28 +36,35 @@ CHECK_INTERVAL=1
 ```
 
 ### Running the script as a service
+#### 1. Install script
 ```
-# 1. Install script
 sudo cp immich-monitor.sh /usr/local/bin/immich-monitor.sh
 sudo chmod +x /usr/local/bin/immich-monitor.sh
-
-# 2. Create service user
+```
+#### 2. Create service user and docker config directory
+The empty directory prevents Docker from trying to read a per‑user config file, keeping the logs clean
+```
 sudo useradd --system --no-create-home --shell /sbin/nologin immichmonitor
 sudo usermod -aG docker immichmonitor
-
-# 3. Install systemd service
+sudo mkdir -p /var/lib/immichmonitor-docker
+sudo chown immichmonitor:docker /var/lib/immichmonitor-docker
+```
+#### 3. Install systemd service
+```
 sudo cp immich-monitor.service /etc/systemd/system/immich-monitor.service
-
-# 4. Enable + start
+```
+#### 4. Enable + start
+```
 sudo systemctl daemon-reload
 sudo systemctl enable immich-monitor.service
 sudo systemctl start immich-monitor.service
-
-# 5. Check status + logs
+```
+#### 5. Check status + logs
+```
 sudo systemctl status immich-monitor.service
 journalctl -u immich-monitor.service -f
 ```
-### uninstall
+#### uninstall
 ```
 # Stop and disable the service
 sudo systemctl stop immich-monitor.service

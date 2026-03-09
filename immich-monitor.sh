@@ -6,8 +6,8 @@ NAME=$(basename "$0" .sh)
 # Configuration
 CONTAINER_FILTER="immich"
 IDLE_DURATION=20            # Seconds to stay under CPU threshold
-CHECK_INTERVAL=1            # Interval between checks (seconds)
-PORT_WAKEUP=80              # Port to watch for wake-up activity
+CHECK_INTERVAL=0.250        # Interval between checks (seconds)
+PORT_WAKEUP=2283            # Port to watch for wake-up activity
 CPU_THRESHOLD=1             # Below this CPU usage is considered idle
 COOLDOWN_AFTER_UNPAUSE=300  # Optional, set to 0 to disable
 
@@ -17,7 +17,7 @@ SCHEDULED_DURATIONS=(1200 1200)     # time in seconds
 
 # Logging
 # if using systmd set to "" to use stdout logging
-LOGFILE=""
+LOGFILE="/dev/kmsg"
 
 # Internal
 frozen=false

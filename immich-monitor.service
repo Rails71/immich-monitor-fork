@@ -19,7 +19,7 @@ Environment="LOGFILE="
 
 # --- Uptional: hardening ---
 NoNewPrivileges=yes
-ProtectSystem=limited
+ProtectSystem=no
 ProtectHome=read-only
 PrivateTmp=yes
 PrivateDevices=no

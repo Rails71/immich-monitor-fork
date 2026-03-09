@@ -13,3 +13,63 @@ Omar@NAS:/docker/immich-app$ dmesg | grep immich
 [  523.072802] immich-monitor: [INFO] immich containers: freeze
 [  964.296959] immich-monitor: [INFO] immich containers: resume
 ```
+
+## Configuration and install
+### Nightly tasks and backups
+To ensure immich is not paused for important background tasks synchronise the following variables with your nightly tasks
+http(s)://immich.URL/admin/system-settings?isOpen=nightly-tasks
+http(s)://immich.URL/admin/system-settings?isOpen=backup
+
+e.g. for nightly tasks run at 0010 and database dumps at 0200, unpause the container for 20mins just beforehand
+```
+SCHEDULED_STARTS=("00:05" "0155")
+SCHEDULED_DURATIONS=(1200 1200)
+```
+### Optional optimisations
+To reduce unnessecary stop/start set a cooldown time e.g.
+```
+COOLDOWN_AFTER_UNPAUSE=300 # wait 5mins before pausing again
+```
+For most home lab users reducing the checkinterval to 1s will not hurt performance
+```
+CHECK_INTERVAL=1
+```
+
+### Running the script as a service
+```
+# 1. Install script
+sudo cp immich-monitor.sh /usr/local/bin/immich-monitor.sh
+sudo chmod +x /usr/local/bin/immich-monitor.sh
+
+# 2. Create service user
+sudo useradd --system --no-create-home --shell /sbin/nologin immichmonitor
+sudo usermod -aG docker immichmonitor
+
+# 3. Install systemd service
+sudo cp immich-monitor.service /etc/systemd/system/immich-monitor.service
+
+# 4. Enable + start
+sudo systemctl daemon-reload
+sudo systemctl enable immich-monitor.service
+sudo systemctl start immich-monitor.service
+
+# 5. Check status + logs
+sudo systemctl status immich-monitor.service
+journalctl -u immich-monitor.service -f
+```
+### uninstall
+```
+# Stop and disable the service
+sudo systemctl stop immich-monitor.service
+sudo systemctl disable immich-monitor.service
+
+# Remove service file
+sudo rm /etc/systemd/system/immich-monitor.service
+sudo systemctl daemon-reload
+
+# Remove script
+sudo rm /usr/local/bin/immich-monitor.sh
+
+# Remove service user
+sudo userdel immichmonitor
+```
